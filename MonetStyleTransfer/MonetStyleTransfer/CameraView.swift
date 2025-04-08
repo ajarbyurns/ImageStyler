@@ -117,21 +117,25 @@ struct CameraPreview: View {
         guard let backCamera = AVCaptureDevice.default(for: .video) else {
             return
         }
+        
+        guard let captureSession else {
+            return
+        }
 
         do {
             let input = try AVCaptureDeviceInput(device: backCamera)
-            captureSession?.addInput(input)
+            captureSession.addInput(input)
         } catch {
             print("Error setting up camera input: \(error)")
             return
         }
 
-        let videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
+        let videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
         videoPreviewLayer.videoGravity = .resizeAspectFill
         self.videoPreviewLayer = videoPreviewLayer
 
         DispatchQueue.global().async {
-            captureSession?.startRunning()
+            captureSession.startRunning()
         }
     }
 

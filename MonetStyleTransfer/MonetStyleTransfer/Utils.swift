@@ -14,11 +14,20 @@ import Vision
 class MachineModel: ObservableObject {
     
     var coreMLRequest: VNCoreMLRequest? = nil
+    let model: VNCoreMLModel?
     @Published var transformedImage: UIImage? = nil
     
     init() {
-        if let model = try? VNCoreMLModel(for: fast_neural_style_transfer_starry_night().model) {
-            self.coreMLRequest = VNCoreMLRequest(model: model, completionHandler: { request, error in
+        model = try? VNCoreMLModel(for: fast_neural_style_transfer_starry_night().model)
+        self.coreMLRequest = createRequest()
+    }
+    
+    func createRequest() -> VNCoreMLRequest? {
+        if let model {
+            let request = VNCoreMLRequest(model: model, completionHandler: { [weak self] request, error in
+                guard let self else {
+                    return
+                }
                 if let result = request.results?.first as? VNPixelBufferObservation {
                     print("Getting Image")
                     let pixelBuffer = result.pixelBuffer
@@ -33,6 +42,7 @@ class MachineModel: ObservableObject {
                     guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
                         DispatchQueue.main.async { [weak self] in
                             self?.transformedImage = nil
+                            self?.coreMLRequest = nil
                         }
                         return
                     }
@@ -42,21 +52,31 @@ class MachineModel: ObservableObject {
                     DispatchQueue.main.async { [weak self] in
                         print("Process Image")
                         self?.transformedImage = image
+                        self?.coreMLRequest = nil
                     }
                 } else {
                     DispatchQueue.main.async { [weak self] in
                         print("Error in Request Results")
                         self?.transformedImage = nil
+                        self?.coreMLRequest = nil
                     }
                 }
             })
+            
+            return request
         } else {
-            print("No Model")
+            return nil
         }
     }
     
     func predict(image: UIImage){
         let ciimage = CIImage(image: image)
+        if coreMLRequest == nil {
+            coreMLRequest = createRequest()
+        }
+        guard let coreMLRequest else {
+            return
+        }
         guard let ciimage else {
             print("Nil ciimage")
             self.transformedImage = nil
@@ -67,11 +87,15 @@ class MachineModel: ObservableObject {
             self.transformedImage = nil
             return
         }
-        let handler = VNImageRequestHandler(ciImage: ciimage ,options: [:])
-        DispatchQueue.global(qos: .userInitiated).async {
+        var handler: VNImageRequestHandler? = VNImageRequestHandler(ciImage: ciimage ,options: [:])
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else {
+                return
+            }
             let arr = [coreMLRequest]
             do {
-                try handler.perform(arr)
+                try handler?.perform(arr)
+                handler = nil
             } catch {
                 print("Error performing request: \(error)")
                 DispatchQueue.main.async { [weak self] in
