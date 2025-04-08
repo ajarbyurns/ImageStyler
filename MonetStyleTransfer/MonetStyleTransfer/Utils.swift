@@ -19,7 +19,6 @@ class MachineModel: ObservableObject {
     
     init() {
         model = try? VNCoreMLModel(for: fast_neural_style_transfer_starry_night().model)
-        self.coreMLRequest = createRequest()
     }
     
     func createRequest() -> VNCoreMLRequest? {
@@ -73,9 +72,6 @@ class MachineModel: ObservableObject {
         let ciimage = CIImage(image: image)
         if coreMLRequest == nil {
             coreMLRequest = createRequest()
-        }
-        guard let coreMLRequest else {
-            return
         }
         guard let ciimage else {
             print("Nil ciimage")

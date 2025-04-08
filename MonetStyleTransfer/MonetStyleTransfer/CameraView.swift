@@ -157,6 +157,7 @@ struct CameraPreview: View {
         captureSession.addOutput(photoOutput)
 
         let photoSettings = AVCapturePhotoSettings()
+        photoSettings.photoQualityPrioritization = .balanced
 
         photoCaptureDelegate = PhotoCaptureDelegate { image in
             captureSession.stopRunning()
@@ -213,30 +214,36 @@ struct ImageDetailView: View {
     @StateObject var model: MachineModel = MachineModel()
 
     var body: some View {
-        ZStack {
-            if let _ = imageWrapper.image {
-                if let transformedImage = model.transformedImage {
-                    Image(uiImage: transformedImage)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    ActivityIndicator()
-                }
-            } else {
-                Text("No Image Available")
-            }
-            VStack {
-                HStack {
-                    Button("Back") {
-                        self.imageWrapper.image = nil
+        VStack {
+            GeometryReader { geo in
+                if let _ = imageWrapper.image {
+                    if let transformedImage = model.transformedImage {
+                        Image(uiImage: transformedImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geo.size.width, height: geo.size.height)
+                    } else {
+                        ActivityIndicator()
+                            .frame(width: geo.size.width, height: geo.size.height)
                     }
-                    .padding()
-                    Spacer()
+                } else {
+                    Text("No Image Available")
+                        .frame(width: geo.size.width, height: geo.size.height)
                 }
-                Spacer()
             }
         }
-        .navigationBarHidden(true)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    self.imageWrapper.image = nil
+                } label: {
+                    HStack {
+                        Text("Retake Photo")
+                    }
+                }
+            }
+        }
         .onAppear() {
             transformImage()
         }
