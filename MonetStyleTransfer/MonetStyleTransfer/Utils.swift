@@ -17,7 +17,7 @@ class MachineModel: ObservableObject {
     @Published var transformedImage: UIImage? = nil
     
     init() {
-        if let model = try? VNCoreMLModel(for: FacialCartoonization().model) {
+        if let model = try? VNCoreMLModel(for: fast_neural_style_transfer_starry_night().model) {
             self.coreMLRequest = VNCoreMLRequest(model: model, completionHandler: { request, error in
                 if let result = request.results?.first as? VNPixelBufferObservation {
                     print("Getting Image")
